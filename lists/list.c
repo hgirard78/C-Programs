@@ -66,7 +66,7 @@ struct list *list_lower_bound(struct list *list, int value)
     for (; list; list = list->next)
     {
         l = list;
-        if (list->next && list->next->data >= value)
+        if (list->next && list->next->data > value)
         {
             break; 
         }
