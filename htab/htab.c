@@ -1,209 +1,199 @@
+
 #include <err.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "htab.h"
 
 uint32_t hash(char *key)
 {
-    size_t len = strlen(key);
-    size_t i = 0;
-    uint32_t hashkey = 0;
-
-    while (i != len)
-    {
-        hashkey += key[i++];
-        hashkey += hashkey << 10;
-        hashkey ^= hashkey >> 6;
-    }
-
-    hashkey += hashkey << 3;
-    hashkey ^= hashkey >> 11;
-    hashkey += hashkey << 15;
-
-    return hashkey;
+size_t i = 0;
+uint32_t hash = 0;
+while(*(key+i) != 0)
+{
+hash += *(key+i);
+hash += hash << 10;
+hash ^= hash >> 6;
+i += 1;
+}
+hash += hash << 3;
+hash ^= hash >> 11;
+hash += hash << 15;
+return hash;
 }
 
 struct htab *htab_new()
 {
-    struct htab *hashtab = malloc(sizeof(struct htab));
-
-    if (hashtab == NULL) 
+  struct htab *table = malloc(sizeof(struct htab));
+  if(table == NULL)
     {
-        errx(1, "Not enough memory!");
+      errx(1, "Not enough memory!");
     }
+  table->size = 0;
+  table->capacity = 4;
+  struct pair *dat = malloc(sizeof(struct pair)*table->capacity);
+  if(dat == NULL)
+    {
+      errx(1, "Not enough memory!");
+    }
+  for(size_t i = 0; i<table->capacity;i++)
+    {
+      (dat + i)->hkey = 0;
+      (dat+i)->key = NULL;
+      (dat+i)->value = NULL;
+      (dat+i)->next = NULL;
+    }
+  table->data = dat;
+  return table;
+ 
+}
 
-    hashtab->capacity = 4;
-    hashtab->size = 0;
-
-    struct pair *data = calloc(hashtab->capacity, sizeof(struct pair));
-
-    if (data == NULL)
-        errx(1, "Not enough memory!");
-
-    hashtab->data = data;
-
-    return hashtab;
+void clear_pairs(struct pair *p)
+{
+  if(p->next != NULL)
+    {
+      clear_pairs(p->next);
+      free(p->next);
+    }
 }
 
 void htab_clear(struct htab *ht)
 {
-    ht->size = 0;
-    struct pair *stock;
-    struct pair *stock1;
-
-    for (size_t i = 0; i < ht->capacity; i++)
+    struct pair *p = ht->data;
+    for(size_t i =0; i<ht->capacity; i++)
     {
-        stock = ht->data[i].next;
-
-        while (stock)
-        {
-            stock1 = stock->next; 
-            free(stock);
-            stock = stock1;
-        }
-
-        ht->data[i].next = NULL;
+   clear_pairs(p+i);
     }
+    ht->size = 0;
 }
 
 void htab_free(struct htab *ht)
 {
-    htab_clear(ht);
-    free(ht->data);
-    free(ht);
+  htab_clear(ht);
+  //struct pair *p = ht->data;
+  /*for(size_t i =0; i<ht->capacity; i++)
+    {
+      free(p+i);
+      }*/
+  free(ht->data);
+  free(ht);
 }
 
 struct pair *htab_get(struct htab *ht, char *key)
 {
-    uint32_t hashkey = hash(key);
-    int i = hashkey % (ht->capacity);
-    struct pair *data = ht->data[i].next;
-
-    while (data)
+  uint32_t hh = hash(key);
+  size_t i = hh % ht->capacity;
+  struct pair *p = ht->data + i;
+  while(p != NULL && p->key != key && p->hkey != hh)
     {
-        if (data->key == key) 
-            return data;
+      p = p->next;
+    }
+  return p;
+}
 
-        data = data->next;
+struct htab * double_hash_cap(struct htab *ht)
+{
+  struct pair *l = malloc(sizeof(struct pair));
+  struct pair *li = l;
+  l->value = NULL;
+  l->hkey = 0;
+  l->key = NULL;
+  l->next = NULL;
+
+  
+  for(size_t i = 0; i < ht->capacity; i ++)
+    {
+      struct pair *p = ht->data + i;
+      struct pair *pi = p->next;
+      while(pi != NULL)
+	{
+	  li->next = pi;
+	  li = pi;
+	  pi = pi->next;
+	}
+      p->next = NULL;
     }
 
-    return NULL;
+  ht->capacity = ht->capacity * 2;
+  ht->size = 0;
+  ht->data = realloc(ht->data,sizeof(struct pair) * ht->capacity);
+
+  for(size_t i = ht->capacity / 2; i < ht->capacity; i ++)
+    {
+      (ht->data + i)->hkey = 0;
+      (ht->data+i)->key = NULL;
+      (ht->data+i)->value = NULL;
+      (ht->data+i)->next = NULL;
+    }
+
+  if(ht == NULL)
+      errx(1, "Not enough memory!");
+    
+  
+  li = l->next;
+  while(li != NULL)
+    {
+      htab_insert(ht,li->key,li->value);
+      li = li->next;
+      }
+
+  clear_pairs(l);
+  free(l);
+
+  return ht;
+}
+
+void add_element(struct htab *ht, char *key, void *value)
+{
+  uint32_t hh = hash(key);
+  size_t i = hh % ht->capacity;
+  struct pair *p = ht->data + i;
+  if(p->next == NULL) ht->size ++;
+
+  struct pair *pn = p->next;
+  struct pair *newp = malloc(sizeof(struct pair));
+  newp->key = key;
+  newp->value = value;
+  newp->hkey = hh;
+  newp->next = pn;
+  p->next = newp;
+
 }
 
 int htab_insert(struct htab *ht, char *key, void *value)
 {
-    uint32_t hkey = hash(key);
-    size_t index = hkey % (ht->capacity);
-    struct pair *x = ht->data[index].next;
-    
-    struct pair *p = malloc(sizeof(struct pair));
-    p->hkey = hkey;
-    p->key = key;
-    p->value = value;
+  if(htab_get(ht,key) != NULL)
+    return 0;
 
-    while (x)
+  int ration = 100 * ht->size / ht->capacity;
+  if(ration >= 75)
     {
-        if (x->key == key)
-            return 0;
-        x = x->next;
+      ht = double_hash_cap(ht);
     }
 
-    x = &(ht->data[index]);
-    if (x->next)
-    {
-        x = x->next;
-        p->next = x;
-        ht->data[index].next = p;
-    }
-    else
-    { 
-        p->next = NULL; 
-        ht->data[index].next = p;
-        ht->size++;
-    }
-    int ratio = 100 * (ht->size) / (ht->capacity);
-    if (ratio > 75)
-    {
-        size_t old_cap = ht->capacity;
-        ht->capacity *= 2;
-        size_t size = 0;
-        struct pair *data = calloc(ht->capacity, sizeof(struct pair));
-
-        if (data == NULL)
-        {
-            errx(1, "Not enough memory!");
-        }
-
-        for (size_t i = 0; i < old_cap; i++)
-        {
-            struct pair *p = ht->data[i].next;
-
-            while (p)
-            {
-                struct pair *save = p->next;
-                struct pair *stock = p;
-                size_t index = (stock->hkey) % (ht->capacity);
-                struct pair *pdata = &data[index];
-
-                if (pdata->next)
-                {
-                    pdata = pdata->next;
-                    stock->next = pdata;
-                    data[index].next = stock;
-                }
-
-                else
-                {
-                    stock->next = NULL;
-                    pdata->next = stock;
-                    size++;
-                }
-
-                p = save;
-            }
-        }
-
-        free(ht->data);
-        ht->data = data;
-        ht->size = size;
-    }
-
-    return 1;
+  
+  
+  add_element(ht,key,value);
+  return 1;
 }
 
 void htab_remove(struct htab *ht, char *key)
 {
-    if (htab_get(ht, key) == NULL)
-        return;
-
-    uint32_t hkey = hash(key);
-    size_t index = hkey % (ht->capacity);
-    struct pair *p = &(ht->data[index]);
-    if (p->next->next == NULL)
+    uint32_t hh = hash(key);
+    size_t i = hh % ht->capacity;
+    struct pair *p = ht->data + i;
+    while(p->next != NULL && p->next->key != key && p->next->hkey != hh)
     {
-        ht->size--;
+      p = p->next;
     }
 
-    while (p->next)
-    {
-        if (p->next->key == key)
-        {
-            struct pair *stock = p->next;
+    if(p->next == NULL) return;
 
-            if (stock->next)
-            {
-                p->next = p->next->next;
-                free(stock);
-            }
+    struct pair *old = p->next;
+    p->next = old->next;
+    
+    free(old);
 
-            else
-            {
-                p->next = NULL;
-                free(stock);
-            }
-        }
-
-        if (p->next)
-            p = p->next;
-    }
+    if(p->next == NULL) ht->size--;
 }
+
