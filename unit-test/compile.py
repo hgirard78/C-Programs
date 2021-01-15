@@ -1,5 +1,7 @@
 import sys
 
+if not sys.platform == "linux":
+    raise SystemError("Not the good os.")
 args = sys.argv
 if len(args) != 2:
     raise NotImplementedError("Please put at least one arg (main or test)")
