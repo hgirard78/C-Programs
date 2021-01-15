@@ -1,29 +1,65 @@
 #!/bin/bash
 
-#python3 compile.py $1
+test(){
+  cd functions || exit
+  cp functions.c functions.h ../test/
+  cd .. || exit
+  cd test/ || exit
+  make
+  echo "Compilation done!"
+  echo ""
+  echo "------TESTS------" | lolcat
+  echo ""
+  ./test
+  echo ""
+  echo "------DONE!------" | lolcat
+  echo ""
+  make clean && rm functions.c functions.h
+  echo "Directory cleaned."
+}
 
-if [ -z $1 ]
+main(){
+  cd functions || exit
+  cp functions.c functions.h ../.
+  cd .. || exit
+  make
+  echo "Compilation done!"
+  echo ""
+  echo "------TESTS------" | lolcat
+  echo ""
+  ./main | lolcat
+  echo ""
+  echo "------DONE!------" | lolcat
+  echo ""
+  make clean && rm -rf functions.c functions.h
+  echo "Directory cleaned."
+}
+
+echo "Choose between python and bash to compile: (default = bash) [P/B]"
+read choice
+
+if [ -z $choice ] || [ $choice = 'B' ] || [ $choice = 'b' ]
 then
+  echo "BASH" | lolcat
+  if [ -z $1 ]
+  then
     echo "Problem: no args!"
-elif [ $1 = "test" ]
+  elif [ $1 = "main" ]
+  then
+    main
+  elif [ $1 = "test" ]
+  then
+    test
+  else
+    echo "Ok I do nothing"
+  fi
+elif [ $choice = "P" ] || [ $choice = 'p' ]
 then
-    cp functions.c functions.h test/
-    cd test/
-    make
-    echo "Compilation done!"
-    echo ""
-    ./test
-    echo "Test done!"
-    echo ""
-    make clean
-    rm functions.c functions.h
-    echo "Directory cleaned."
-elif [ $1 = "main" ]
-then
-    make
-    ./main
-    make clean
-
-else
-    echo "Ok I do nothing :)"
+  echo "PYTHON" | lolcat
+  if [ -z $1 ]
+  then
+    echo "Problem: no args!"
+  else
+    python3 compile.py $1
+  fi
 fi

@@ -1,6 +1,8 @@
 import sys
 
 args = sys.argv
+if len(args) != 2:
+    raise NotImplementedError("Please put at least one arg (main or test)")
 
 if args[1] == 'test':
     try:
@@ -11,8 +13,12 @@ if args[1] == 'test':
         os.chdir(path + "/test")
         os.system("make")
         print("Compilation done!\n")
+        os.system("echo '------TESTS------' | lolcat")
+        print()
         os.system("./test")
-        print("Unit-Test done!\n")
+        print()
+        os.system("echo '------DONE!------' | lolcat")
+        print()
     except ModuleNotFoundError:
         print("Module os not found")
     except OSError:
@@ -24,7 +30,7 @@ if args[1] == 'test':
     else:
         os.system("rm functions.c functions.h && make clean")
         os.chdir(path)
-        print("DONE!")
+        print("Directory cleaned.")
 
 elif args[1] == 'main':
     try:
@@ -35,8 +41,12 @@ elif args[1] == 'main':
         os.chdir(path)
         os.system("make")
         print("Compilation done!\n")
-        os.system("./main")
-        print("Your tests are done!\n")
+        os.system("echo '------TESTS------' | lolcat")
+        print()
+        os.system("./main | lolcat")
+        print()
+        os.system("echo '------DONE!------' | lolcat")
+        print()
     except ModuleNotFoundError:
         print("Module os not found")
     except OSError:
@@ -47,7 +57,9 @@ elif args[1] == 'main':
         print("Unexpected error:", sys.exc_info()[0])
     else:
         os.system("rm functions.c functions.h && make clean")
-        print("DONE!")
+        print("Directory cleaned.")
 
+else:
+    raise NotImplementedError("Bad args, please put at least one arg (main or test)")
 
 
