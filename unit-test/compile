@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#python3 compile.py $1
+
+if [ -z $1 ]
+then
+    echo "Problem: no args!"
+elif [ $1 = "test" ]
+then
+    cp functions.c functions.h test/
+    cd test/
+    make
+    echo "Compilation done!"
+    echo ""
+    ./test
+    echo "Test done!"
+    echo ""
+    make clean
+    rm functions.c functions.h
+    echo "Directory cleaned."
+elif [ $1 = "main" ]
+then
+    make
+    ./main
+    make clean
+
+else
+    echo "Ok I do nothing :)"
+fi

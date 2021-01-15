@@ -1,19 +1,17 @@
 #include <criterion/criterion.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "functions_test.h"
+#include "functions.h"
 
 void setup(void)
 {
-    puts("Run before the test");
 }
 
 void teardown(void)
 {
-    puts("Run after the test");
 }
 
-Test(facto, facto_5, .init = setup, .fini = teardown)
+Test(facto, facto_5)
 {
     unsigned long n = 5;
     unsigned long res = facto(n);

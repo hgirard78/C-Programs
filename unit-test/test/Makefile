@@ -4,17 +4,17 @@ CLFLAGS= -Wall -Wextra -Werror -std=c99 -O2
 LDFLAGS= 
 LDLIBS= -lcriterion
 
-SRC= functions.c main.c
+SRC= functions.c test.c
 OBJ= ${SRC:.c=.o}
 DEP= ${SRC:.c=.d}
 
-all: main
+all: test
 
 -include ${DEP}
 
-main: ${OBJ}
+test: ${OBJ}
 
 clean:
-	rm -rf ${OBJ} ${DEP} main
+	rm -rf ${OBJ} ${DEP} test
 
 

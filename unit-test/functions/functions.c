@@ -1,6 +1,7 @@
 #include <criterion/criterion.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "functions.h"
 
 unsigned long facto (unsigned long n)
 {
